@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html ng-app="help">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body ng-controller="main" style="max-width:500px;background:#eee;">
+    <div>
+      <h3>How to setup SSL for nginx + node droplets</h3>
+      <br>
+      Fill out the below information for your project.  You will need to make sure that you've setup you DNS records to point to your droplet for all the domains you put in here.
+    </div>
+    Example Domains
+    <br>
+    <i style="color:#444;font-size:.75em;">devmountain.com</i>
+    <br>
+    <i style="color:#444;font-size:.75em;">www.devmountain.com</i>
+    <br>
+    <i style="color:#444;font-size:.75em;">foo.com</i>
+    <br>
+    <i style="color:#444;font-size:.75em;">foo.bar.com</i>
+    <div ng-repeat="domain in domains track by $index">
+       Domain {{$index+1}}: <input type="text" ng-model="domain.name" placeholder="domain"> <span ng-click="domains.splice($index, 1)"> X </span>
+    </div>
+    <button ng-click="domains.push({})">Add Domain</button>
+    <br/>
+    Port: <input type="number" ng-model="port" placeholder="port" min="3000"/> (>3000)
+    <br/>
+    Project: <input type="text" ng-model="project" placeholder="project"/> (no spaces or characters)
+    <br/>
+    <br/>
+    <div>
+      After you have filled out the information above, copy the code below and paste it into your terminal connected to your droplet.
+    </div>
+    <textarea disabled=true style="display:block;height:25em;width:100%;"> {{getCopy()}}</textarea>
+    <br/>
+    <div>
+      After you've double checked that all the domains are pointing to your droplet correctly, you will need to run the certbot commands below.
+    </div>
+    <textarea disabled=true style="display:block;height:1em;width:100%;"> {{setupCerts()}}</textarea>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.js" charset="utf-8"></script>
+<script>
+angular.module('help',[]).controller('main', function($scope, $http){
+  $scope.domains=[{}];
+
+  let checkDomains = function(){
+    console.log()
+    return $scope.domains.reduce((a, e)=> a && e.name.match(/\../), true)
+  };
+  let checkProject = function(){
+    return !$scope.project.match(/[^a-zA-Z-0-9]/);
+  }
+
+  let checkAll = function(){
+    if (!$scope.domains[0].name) return 'Must provide at least 1 domain';
+    if (!checkDomains()) return 'Domains do not pass validation';
+    if (!$scope.port) return 'Must provide port backend is running on';
+    if (!$scope.project) return 'Must provide a filename for the project\'s configuration';
+    if (!checkProject()) return 'Project name does not pass vaildation';
+  }
+
+  $scope.getCopy = function(){
+    let domains = $scope.domains.reduce((t, e) => t+ " " + e.name, "");
+    let file = $scope.domains[0];
+
+    let check = checkAll()
+    if (check) return check;
+
+    return `
+echo '
+server {
+
+  listen 80;
+
+  server_name ${domains};
+
+  location / {
+      proxy_pass http://127.0.0.1:${$scope.port};
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+      proxy_set_header Host $host;
+      proxy_cache_bypass $http_upgrade;
+  }
+}
+' > /etc/nginx/sites-available/${$scope.project};
+ln -s /etc/nginx/sites-available/${$scope.project} /etc/nginx/sites-enabled;
+`
+  }
+
+
+  $scope.setupCerts = function(){
+    let check = checkAll()
+    if (check) return check;
+
+    return `sudo certbot ${$scope.domains.reduce((t, e) => t+ " -d " + e.name, "")}`
+  }
+
+})
+</script>
+
+  </body>
+</html>
