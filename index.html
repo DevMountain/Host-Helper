@@ -32,12 +32,14 @@
     <div>
       After you have filled out the information above, copy the code below and paste it into your terminal connected to your droplet.
     </div>
-    <textarea disabled=true style="display:block;height:25em;width:100%;"> {{getCopy()}}</textarea>
+    <button ng-disabled = "{{disabled}}" ng-click="copy1 = copy('file')">Copy</button> {{copy1}}
+    <textarea id="file" style="display:block;height:25em;width:100%;"> {{getCopy()}}</textarea>
     <br/>
     <div>
       After you've double checked that all the domains are pointing to your droplet correctly, you will need to run the certbot commands below.
     </div>
-    <textarea disabled=true style="display:block;height:1em;width:100%;"> {{setupCerts()}}</textarea>
+    <button ng-disabled = "{{disabled}}" ng-click="copy2 = copy('cert')">Copy</button> {{copy2}}
+    <textarea id="cert" style="display:block;height:1em;width:100%;"> {{setupCerts()}}</textarea>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.js" charset="utf-8"></script>
 <script>
@@ -53,11 +55,13 @@ angular.module('help',[]).controller('main', function($scope, $http){
   }
 
   let checkAll = function(){
+    $scope.disabled = true;
     if (!$scope.domains[0].name) return 'Must provide at least 1 domain';
     if (!checkDomains()) return 'Domains do not pass validation';
     if (!$scope.port) return 'Must provide port backend is running on';
     if (!$scope.project) return 'Must provide a filename for the project\'s configuration';
     if (!checkProject()) return 'Project name does not pass vaildation';
+    $scope.disabled = false;
   }
 
   $scope.getCopy = function(){
@@ -86,9 +90,24 @@ server {
 }
 ' > /etc/nginx/sites-available/${$scope.project};
 ln -s /etc/nginx/sites-available/${$scope.project} /etc/nginx/sites-enabled;
+sudo service nginx restart
 `
   }
 
+  $scope.copy = function(id){
+    let textArea = document.getElementById(id);
+    textArea.select();
+    var msg;
+    try {
+      var successful = document.execCommand('copy');
+       msg = successful ? 'copied' : 'unsuccessful';
+      console.log('Copying text command was ' + msg);
+    } catch (err) {
+      msg = 'unsuccessful';
+      console.log('Oops, unable to copy');
+    }
+    return msg;
+  }
 
   $scope.setupCerts = function(){
     let check = checkAll()
