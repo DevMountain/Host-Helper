@@ -65,7 +65,8 @@ angular.module('help',[]).controller('main', function($scope, $http){
   }
 
   $scope.getCopy = function(){
-    let domains = $scope.domains.reduce((t, e) => t+ " " + e.name.replace('http://', '').replace('https://',''), "");
+
+    let domains = $scope.domains.reduce((t, e) => e.name && t+ " " + e.name.replace('http://', '').replace('https://',''), "");
     let file = $scope.domains[0];
 
     let check = checkAll()
