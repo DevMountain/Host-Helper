@@ -66,7 +66,7 @@ angular.module('help',[]).controller('main', function($scope, $http){
 
   $scope.getCopy = function(){
 
-    let domains = $scope.domains.reduce((t, e) => e.name && t+ " " + e.name.replace('http://', '').replace('https://',''), "");
+    let domains = $scope.domains.reduce((t, e) => e.name && t+ " " + e.name.replace('http://', '').replace('https://','').replace('/', ''), "");
     let file = $scope.domains[0];
 
     let check = checkAll()
@@ -78,7 +78,7 @@ server {
 
   listen 80;
 
-  server_name ${domains};
+  server_name ${domains.toLowerCase()};
 
   location / {
       proxy_pass http://127.0.0.1:${$scope.port};
@@ -89,8 +89,8 @@ server {
       proxy_cache_bypass $http_upgrade;
   }
 }
-' > /etc/nginx/sites-available/${$scope.project};
-ln -s /etc/nginx/sites-available/${$scope.project} /etc/nginx/sites-enabled;
+' > /etc/nginx/sites-available/${$scope.project.toLowerCase()};
+ln -s /etc/nginx/sites-available/${$scope.project.toLowerCase()} /etc/nginx/sites-enabled;
 sudo service nginx restart
 `
   }
@@ -114,7 +114,7 @@ sudo service nginx restart
     let check = checkAll()
     if (check) return check;
 
-    return `sudo certbot ${$scope.domains.reduce((t, e) => t+ " -d " + e.name, "")}`
+    return `sudo certbot ${$scope.domains.reduce((t, e) => t+ " -d " + e.name, "").toLowerCase()}`
   }
 
 })
